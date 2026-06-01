@@ -1,8 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <style>
+    .mtn { fill: #2563eb; }
+    .snow { fill: #ffffff; }
+    .skier { fill: #0f172a; }
     @media (prefers-color-scheme: dark) {
-      path { stroke: #60a5fa; }
+      .mtn { fill: #60a5fa; }
+      .snow { fill: #e2e8f0; }
+      .skier { fill: #e2e8f0; }
     }
   </style>
-  <path d="M6 16 L13 23 L26 9" fill="none" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Mountain -->
+  <path class="mtn" d="M2 27 L12 9 L18 19 L22 13 L30 27 Z" />
+  <!-- Snow cap -->
+  <path class="snow" d="M9.5 14 L12 9 L14.5 14 L13 13 L11.5 14 Z" />
+  <!-- Skier silhouette -->
+  <circle class="skier" cx="22" cy="21" r="1.6" />
+  <path class="skier" d="M20.4 22.2 L23.6 22.2 L24.5 25.2 L19.5 25.2 Z" />
 </svg>

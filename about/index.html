@@ -1,15 +1,68 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
-    <title>About</title>
-    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="/assets/css/styles.css">
+    <meta name="description" content="About the caitlincameron.ski holding site." />
+    <title>About — caitlincameron.ski</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/css/styles.css" />
+    <script defer src="/assets/js/main.js"></script>
   </head>
   <body>
-    <h1>About</h1>
-    <p><a href="/">Back home</a></p>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <p class="wordmark">
+        <a href="/">caitlincameron<span class="wordmark__dot">.</span>ski</a>
+      </p>
+    </header>
+
+    <main id="main" class="container">
+      <article class="prose">
+        <h1>About this page</h1>
+
+        <section lang="de" aria-labelledby="about-de">
+          <h2 id="about-de">Über diese Seite</h2>
+          <p>
+            Dies ist eine vorübergehende Platzhalterseite für
+            <strong>caitlincameron.ski</strong>. Die richtige Website von
+            Caitlin Cameron ist in Vorbereitung und wird in Kürze hier
+            veröffentlicht.
+          </p>
+        </section>
+
+        <section lang="en" aria-labelledby="about-en">
+          <h2 id="about-en">About in English</h2>
+          <p>
+            This is a temporary holding page for
+            <strong>caitlincameron.ski</strong>. Caitlin Cameron's full
+            website is being prepared and will be published here soon.
+          </p>
+          <p>
+            The small slalom game on the home page is just for fun while
+            you wait — it isn't part of the eventual site.
+          </p>
+        </section>
+
+        <section lang="en" aria-labelledby="about-tech">
+          <h2 id="about-tech">How the site is built</h2>
+          <p>
+            The holding page is a handful of static HTML, CSS and
+            JavaScript files with no framework or build step. It is
+            hosted on Cloudflare Pages. The source lives on GitHub.
+          </p>
+        </section>
+
+        <p><a href="/">← Back to the home page</a></p>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        <span>&copy; <span id="footer-year">2026</span> Caitlin Cameron</span>
+      </p>
+    </footer>
   </body>
 </html>

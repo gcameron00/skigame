@@ -1,30 +1,280 @@
 :root {
   color-scheme: light dark;
-  --color-bg: #ffffff;
+  --color-bg: #f7fafc;
+  --color-surface: #ffffff;
   --color-text: #1e293b;
   --color-muted: #64748b;
   --color-accent: #2563eb;
+  --color-accent-strong: #1d4ed8;
   --color-border: #e2e8f0;
+  --color-shadow: rgba(15, 23, 42, 0.08);
+  --max-width: 42rem;
+  --radius: 14px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #0f172a;
+    --color-bg: #0b1220;
+    --color-surface: #111a2e;
     --color-text: #e2e8f0;
     --color-muted: #94a3b8;
     --color-accent: #60a5fa;
+    --color-accent-strong: #93c5fd;
     --color-border: #1e293b;
+    --color-shadow: rgba(0, 0, 0, 0.35);
   }
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  font-family: system-ui, sans-serif;
-  margin: 2rem;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  margin: 0;
   background-color: var(--color-bg);
   color: var(--color-text);
+  line-height: 1.55;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 a {
-  text-decoration: none;
   color: var(--color-accent);
+  text-decoration: none;
+}
+
+a:hover,
+a:focus-visible {
+  color: var(--color-accent-strong);
+  text-decoration: underline;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--color-accent);
+  color: #fff;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+.site-header {
+  padding: 1.5rem 1.25rem 0.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.wordmark {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--color-muted);
+}
+
+.wordmark a {
+  color: inherit;
+}
+
+.wordmark__dot {
+  color: var(--color-accent);
+}
+
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+  flex: 1;
+}
+
+.message {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.5rem 1.5rem;
+  margin: 1rem 0;
+  box-shadow: 0 1px 2px var(--color-shadow);
+}
+
+.message h1,
+.message h2 {
+  margin: 0 0 0.5rem;
+  line-height: 1.2;
+}
+
+.message h1 {
+  font-size: clamp(1.6rem, 2.5vw + 1rem, 2.25rem);
+}
+
+.message h2 {
+  font-size: clamp(1.35rem, 2vw + 0.9rem, 1.85rem);
+  font-weight: 600;
+}
+
+.message p {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1.05rem;
+}
+
+.game {
+  margin: 2.5rem 0 0;
+  padding-top: 1.5rem;
+  border-top: 1px dashed var(--color-border);
+  text-align: center;
+}
+
+.game__heading {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  margin: 0 0 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.game__subheading {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--color-muted);
+}
+
+.game__intro {
+  margin: 0 0 1rem;
+  color: var(--color-muted);
+  font-size: 0.95rem;
+}
+
+.game__stage {
+  display: flex;
+  justify-content: center;
+}
+
+#slalom-canvas {
+  display: block;
+  width: min(320px, 100%);
+  height: auto;
+  aspect-ratio: 320 / 480;
+  background: linear-gradient(180deg, #eef4ff 0%, #ffffff 100%);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px var(--color-shadow);
+  touch-action: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  #slalom-canvas {
+    background: linear-gradient(180deg, #1a2747 0%, #0f1a35 100%);
+  }
+}
+
+.game__controls {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.game__button {
+  font: inherit;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.45rem 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.game__button:hover:not(:disabled),
+.game__button:focus-visible:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent-strong);
+}
+
+.game__button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.game__status {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  color: var(--color-muted);
+  font-size: 0.95rem;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.game__status strong {
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.game__hint {
+  margin: 0.25rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", monospace;
+  font-size: 0.8em;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.05rem 0.35rem;
+  box-shadow: 0 1px 0 var(--color-border);
+}
+
+.site-footer {
+  text-align: center;
+  padding: 1.25rem;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  border-top: 1px solid var(--color-border);
+  background: transparent;
+}
+
+.site-footer p {
+  margin: 0;
+}
+
+.prose h1 {
+  font-size: clamp(1.6rem, 2.5vw + 1rem, 2.25rem);
+  margin: 0 0 1rem;
+}
+
+.prose h2 {
+  font-size: 1.2rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.prose p {
+  margin: 0 0 0.75rem;
 }
