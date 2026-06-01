@@ -1,17 +1,88 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
-    <title>Home</title>
-    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="/assets/css/styles.css">
+    <meta name="description" content="caitlincameron.ski — coming soon. Bald verfügbar." />
+    <title>caitlincameron.ski — Bald verfügbar / Coming soon</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/css/styles.css" />
     <script defer src="/assets/js/main.js"></script>
+    <script defer src="/assets/js/slalom.js"></script>
   </head>
   <body>
-    <h1>It works 🎉</h1>
-    <p>This site is deployed using Cloudflare Pages.</p>
-    <p><a href="/about/">About</a></p>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <p class="wordmark">caitlincameron<span class="wordmark__dot">.</span>ski</p>
+    </header>
+
+    <main id="main" class="container">
+      <section class="message" lang="de" aria-labelledby="msg-de-heading">
+        <h1 id="msg-de-heading">Bald verfügbar</h1>
+        <p>
+          Die Website von Caitlin Cameron ist noch nicht online. Wir arbeiten
+          daran und freuen uns, sie bald hier präsentieren zu dürfen. Vielen
+          Dank für Ihre Geduld — schauen Sie gerne in Kürze wieder vorbei.
+        </p>
+      </section>
+
+      <section class="message" lang="en" aria-labelledby="msg-en-heading">
+        <h2 id="msg-en-heading">Coming soon</h2>
+        <p>
+          Caitlin Cameron's website is not yet available. We're putting it
+          together and look forward to sharing it here soon. Thank you for
+          your patience — please check back shortly.
+        </p>
+      </section>
+
+      <section class="game" aria-labelledby="game-heading">
+        <h2 id="game-heading" class="game__heading">
+          A little something to pass the time
+          <span class="game__subheading" lang="de">Ein kleines Spiel zum Zeitvertreib</span>
+        </h2>
+
+        <p class="game__intro">
+          Steer the skier through the gates. Just for fun — no score to chase.
+        </p>
+
+        <div class="game__stage">
+          <canvas
+            id="slalom-canvas"
+            width="320"
+            height="480"
+            aria-label="Slalom skiing mini-game"
+            role="img"
+          >
+            Your browser does not support the HTML canvas element, so the
+            mini-game isn't available — but the message above is the
+            important part.
+          </canvas>
+        </div>
+
+        <div class="game__controls">
+          <button type="button" id="slalom-start" class="game__button">Start</button>
+          <button type="button" id="slalom-pause" class="game__button" disabled>Pause</button>
+        </div>
+
+        <p class="game__status" aria-live="polite">
+          <span>Gates cleared: <strong id="slalom-cleared">0</strong></span>
+          <span>Missed: <strong id="slalom-missed">0</strong></span>
+        </p>
+
+        <p class="game__hint">
+          Use <kbd>←</kbd> / <kbd>→</kbd> (or drag on touch) to steer.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        <a href="/about/">About this page</a>
+        &nbsp;·&nbsp;
+        <span>&copy; <span id="footer-year">2026</span> Caitlin Cameron</span>
+      </p>
+    </footer>
   </body>
 </html>
