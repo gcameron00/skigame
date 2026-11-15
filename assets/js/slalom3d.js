@@ -10,7 +10,12 @@
  * the game scrolls near the viewport, so the coming-soon message stays
  * light. If WebGL is unavailable the original 2D game (slalom-2d.js) is
  * loaded instead.
+ *
+ * The whole course sits in a `world` group tilted by SLOPE while the camera
+ * and sky stay level, so the piste visibly falls away towards the valley.
  */
+
+import { createAudio } from "./slalom-audio.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -32,6 +37,7 @@ async function boot() {
     speedEl: $("slalom-speed"),
     speedWrap: $("slalom-speed-wrap"),
     overlay: $("slalom-overlay"),
+    soundBtn: $("slalom-sound"),
   };
 
   setOverlay(ui, "Loading…");
@@ -76,6 +82,7 @@ function nearViewport(el) {
 function fallbackTo2D(ui) {
   setOverlay(ui, null);
   if (ui.speedWrap) ui.speedWrap.hidden = true;
+  if (ui.soundBtn) ui.soundBtn.hidden = true;
   if (ui.startBtn) ui.startBtn.disabled = false;
   const s = document.createElement("script");
   s.src = new URL("./slalom-2d.js", import.meta.url).href;
@@ -113,9 +120,12 @@ function createGame(THREE, renderer, ui) {
   const LAT_DAMPING = 9;
   const SPAWN_AHEAD = 150;
   const SCENERY_SPAN = 240;
+  const SLOPE = 0.26; // ≈ 15° pitch of the piste
 
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
   const darkScheme = matchMedia("(prefers-color-scheme: dark)");
+
+  const audio = createAudio(canvas.closest(".game") || document);
 
   const rand = (a, b) => Math.random() * (b - a) + a;
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -128,7 +138,14 @@ function createGame(THREE, renderer, ui) {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(58, 2 / 3, 0.1, 700);
+  const camera = new THREE.PerspectiveCamera(58, 2 / 3, 0.3, 1100);
+  const BASE_FOV = 56;
+
+  // Everything on the piste lives in `world`, tilted downhill (ahead = −Z = lower).
+  const world = new THREE.Group();
+  world.rotation.x = -SLOPE;
+  scene.add(world);
+  world.updateMatrixWorld(true);
 
   const hemi = new THREE.HemisphereLight(0xdbe8ff, 0xffffff, 1.2);
   scene.add(hemi);
@@ -146,7 +163,7 @@ function createGame(THREE, renderer, ui) {
   sun.shadow.normalBias = 0.02;
   scene.add(sun, sun.target);
 
-  scene.fog = new THREE.Fog(0xe8f1ff, 45, 150);
+  scene.fog = new THREE.Fog(0xe8f1ff, 40, 135);
 
   const palettes = {
     day: {
@@ -158,8 +175,8 @@ function createGame(THREE, renderer, ui) {
       hemiI: 1.25,
       sun: 0xfff6e8,
       sunI: 2.1,
-      mountain: 0x9fb6d6,
-      snowcap: 0xffffff,
+      mountain: 0xaabfdc,
+      snowcap: 0xf2f6fd,
     },
     dusk: {
       skyTop: "#0b1430",
@@ -170,8 +187,8 @@ function createGame(THREE, renderer, ui) {
       hemiI: 0.9,
       sun: 0xffc9a8,
       sunI: 1.4,
-      mountain: 0x3a4478,
-      snowcap: 0xb8c4ee,
+      mountain: 0x3d4880,
+      snowcap: 0x9eaadb,
     },
   };
 
@@ -186,26 +203,42 @@ function createGame(THREE, renderer, ui) {
     return t;
   }
 
-  let skyTexture = null;
+  // Sky dome that follows the camera: level horizon, valley haze below it.
+  const skyGeo = new THREE.SphereGeometry(1000, 32, 24);
+  skyGeo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(skyGeo.attributes.position.count * 3), 3));
+  const sky = new THREE.Mesh(
+    skyGeo,
+    new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false })
+  );
+  sky.renderOrder = -1;
+  scene.add(sky);
+
+  function paintSky(p) {
+    const top = new THREE.Color(p.skyTop);
+    const hor = new THREE.Color(p.skyHorizon);
+    const haze = new THREE.Color(p.fog);
+    const pos = skyGeo.attributes.position;
+    const col = skyGeo.attributes.color;
+    const c = new THREE.Color();
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i) / 1000;
+      if (y >= 0) c.copy(hor).lerp(top, Math.pow(y, 0.55));
+      else c.copy(hor).lerp(haze, Math.min(1, -y * 10));
+      col.setXYZ(i, c.r, c.g, c.b);
+    }
+    col.needsUpdate = true;
+  }
+
   function applyPalette() {
     const p = darkScheme.matches ? palettes.dusk : palettes.day;
-    if (skyTexture) skyTexture.dispose();
-    skyTexture = canvasTexture(2, 256, (g, w, h) => {
-      const grad = g.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, p.skyTop);
-      grad.addColorStop(1, p.skyHorizon);
-      g.fillStyle = grad;
-      g.fillRect(0, 0, w, h);
-    });
-    scene.background = skyTexture;
+    paintSky(p);
     scene.fog.color.set(p.fog);
     hemi.color.set(p.hemiSky);
     hemi.groundColor.set(p.hemiGround);
     hemi.intensity = p.hemiI;
     sun.color.set(p.sun);
     sun.intensity = p.sunI;
-    mountainMat.color.set(p.mountain);
-    snowcapMat.color.set(p.snowcap);
+    paintMountains(p);
     requestRender();
   }
 
@@ -253,33 +286,64 @@ function createGame(THREE, renderer, ui) {
   );
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
-  scene.add(ground);
+  world.add(ground);
 
-  // ---- Mountains (kept at "infinity" by following the camera) ----
-  const mountainMat = new THREE.MeshLambertMaterial({ color: 0x9fb6d6, flatShading: true, fog: false });
-  const snowcapMat = new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true, fog: false });
+  // ---- Mountains across the valley (kept at "infinity" by following the camera) ----
+  // Bases sit a few degrees below the horizon and fade into the valley haze;
+  // peaks rise a few degrees above it. Between them and the end of the piste
+  // is open haze, which is what makes the slope read as dropping away.
+  const mountainMat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, fog: false });
   const mountains = new THREE.Group();
+  const mountainGeos = [];
   [
-    [-210, -330, 95, 120],
-    [-120, -360, 140, 150],
-    [-30, -380, 110, 175],
-    [60, -350, 120, 135],
-    [150, -370, 150, 160],
-    [240, -330, 90, 115],
-    [-300, -300, 70, 90],
-    [320, -300, 80, 95],
-  ].forEach(([x, z, h, r], i) => {
-    const seg = 5 + (i % 3);
-    const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, seg), mountainMat);
-    m.position.set(x, h / 2 - 8, z);
+    // [x, z, base below horizon, peak above horizon, radius]
+    [-330, -820, 70, 60, 190],
+    [-140, -880, 75, 85, 230],
+    [60, -900, 75, 70, 210],
+    [250, -860, 72, 92, 240],
+    [440, -800, 68, 58, 190],
+    [-520, -740, 64, 48, 170],
+    [-20, -760, 66, 40, 150],
+  ].forEach(([x, z, below, above, r], i) => {
+    const h = below + above;
+    const geo = new THREE.ConeGeometry(r, h, 6 + (i % 3), 6);
+    // roughen the flanks so they aren't perfect cones
+    const pos = geo.attributes.position;
+    for (let k = 0; k < pos.count; k++) {
+      const y = pos.getY(k);
+      if (y > h / 2 - 1) continue; // keep the apex sharp
+      const j = 1 + (Math.sin(k * 12.9898 + i * 78.233) * 0.5) * 0.18;
+      pos.setX(k, pos.getX(k) * j);
+      pos.setZ(k, pos.getZ(k) * j);
+    }
+    geo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(pos.count * 3), 3));
+    geo.userData.h = h;
+    mountainGeos.push(geo);
+    const m = new THREE.Mesh(geo, mountainMat);
+    m.position.set(x, h / 2 - below, z);
     m.rotation.y = i * 1.3;
-    const capH = h * 0.32;
-    const cap = new THREE.Mesh(new THREE.ConeGeometry(r * 0.32 + 0.5, capH, seg), snowcapMat);
-    cap.position.y = h / 2 - capH / 2 + 0.2;
-    m.add(cap);
     mountains.add(m);
   });
   scene.add(mountains);
+
+  function paintMountains(p) {
+    const haze = new THREE.Color(p.fog);
+    const rock = new THREE.Color(p.mountain);
+    const snow = new THREE.Color(p.snowcap);
+    const c = new THREE.Color();
+    for (const geo of mountainGeos) {
+      const pos = geo.attributes.position;
+      const col = geo.attributes.color;
+      const h = geo.userData.h;
+      for (let k = 0; k < pos.count; k++) {
+        const t = pos.getY(k) / h + 0.5; // 0 at the base, 1 at the peak
+        if (t > 0.72) c.copy(snow);
+        else c.copy(haze).lerp(rock, Math.pow(t / 0.72, 0.8));
+        col.setXYZ(k, c.r, c.g, c.b);
+      }
+      col.needsUpdate = true;
+    }
+  }
 
   // ---- Trees (instanced) ----
   const TREE_COUNT = 110;
@@ -296,7 +360,7 @@ function createGame(THREE, renderer, ui) {
     const m = new THREE.InstancedMesh(geo, mat, TREE_COUNT);
     m.castShadow = true;
     m.frustumCulled = false;
-    scene.add(m);
+    world.add(m);
     return m;
   });
   const trees = [];
@@ -329,7 +393,7 @@ function createGame(THREE, renderer, ui) {
   );
   markerMesh.castShadow = true;
   markerMesh.frustumCulled = false;
-  scene.add(markerMesh);
+  world.add(markerMesh);
   const markers = [];
   function placeMarker(i, z) {
     const m = markers[i] || (markers[i] = {});
@@ -370,7 +434,7 @@ function createGame(THREE, renderer, ui) {
   const SUIT_COLOR = new THREE.Color(0x2563eb);
   const HIT_COLOR = new THREE.Color(0xf97316);
   const skier = buildSkier();
-  scene.add(skier.root);
+  world.add(skier.root);
 
   function limb(from, to, radius, mat, capsule) {
     const dir = new THREE.Vector3().subVectors(to, from);
@@ -522,13 +586,14 @@ function createGame(THREE, renderer, ui) {
       s.rotation.set(0, 0, 0);
     }
     g.group.position.set(g.cx, 0, z);
-    scene.add(g.group);
+    world.add(g.group);
     gates.push(g);
     lastGateZ = z;
   }
 
   function knock(side, strength) {
     side.userData.vel += strength;
+    return true;
   }
 
   function updateGateSprings(dt) {
@@ -561,7 +626,7 @@ function createGame(THREE, renderer, ui) {
   );
   tracks.frustumCulled = false;
   tracks.receiveShadow = true;
-  scene.add(tracks);
+  world.add(tracks);
   let trackIdx = 0;
   const lastSkiPos = [new THREE.Vector3(), new THREE.Vector3()];
   let tracksPrimed = false;
@@ -629,7 +694,7 @@ function createGame(THREE, renderer, ui) {
     })
   );
   spray.frustumCulled = false;
-  scene.add(spray);
+  world.add(spray);
   let sprayNext = 0;
   const tmpColor = new THREE.Color();
 
@@ -669,7 +734,7 @@ function createGame(THREE, renderer, ui) {
   const flakeSpd = new Float32Array(FLAKES);
   for (let i = 0; i < FLAKES; i++) {
     flakePos[i * 3] = rand(-BOX.w / 2, BOX.w / 2);
-    flakePos[i * 3 + 1] = rand(0, BOX.h);
+    flakePos[i * 3 + 1] = rand(-BOX.h / 2, BOX.h / 2);
     flakePos[i * 3 + 2] = rand(-BOX.d, 10);
     flakeSpd[i] = rand(0.8, 2);
   }
@@ -693,12 +758,14 @@ function createGame(THREE, renderer, ui) {
     windT += dt;
     const wind = Math.sin(windT * 0.4) * 0.6;
     const cx = camera.position.x;
+    const cy = camera.position.y;
     const cz = camera.position.z;
     for (let i = 0; i < FLAKES; i++) {
       const j = i * 3;
       flakePos[j] += (wind + Math.sin(windT * 1.3 + i) * 0.3) * dt;
       flakePos[j + 1] -= flakeSpd[i] * dt;
-      if (flakePos[j + 1] < 0) flakePos[j + 1] += BOX.h;
+      if (flakePos[j + 1] < cy - BOX.h / 2) flakePos[j + 1] += BOX.h;
+      if (flakePos[j + 1] > cy + BOX.h / 2) flakePos[j + 1] -= BOX.h;
       // keep the flakes in a box that travels with the camera
       if (flakePos[j + 2] > cz + 10) flakePos[j + 2] -= BOX.d + 10;
       if (flakePos[j + 2] < cz - BOX.d) flakePos[j + 2] += BOX.d + 10;
@@ -726,6 +793,8 @@ function createGame(THREE, renderer, ui) {
     pointerX: 0,
     cleared: 0,
     missed: 0,
+    streak: 0,
+    carve: 0,
     hitTimer: 0,
     shake: 0,
     lastTrackZ: 0,
@@ -736,7 +805,7 @@ function createGame(THREE, renderer, ui) {
 
   function reset() {
     for (const g of gates) {
-      scene.remove(g.group);
+      world.remove(g.group);
       gatePool.push(g);
     }
     gates.length = 0;
@@ -752,6 +821,8 @@ function createGame(THREE, renderer, ui) {
       targetSpeed: SPEED_START,
       cleared: 0,
       missed: 0,
+      streak: 0,
+      carve: 0,
       hitTimer: 0,
       shake: 0,
       lastTrackZ: 0,
@@ -796,6 +867,7 @@ function createGame(THREE, renderer, ui) {
     state.vx = clamp(state.vx, -LAT_MAX, LAT_MAX);
     state.x += state.vx * dt;
     if (Math.abs(state.x) > SKIER_LIMIT) {
+      if (Math.abs(state.vx) > 3) audio.play("edge");
       state.x = Math.sign(state.x) * SKIER_LIMIT;
       state.vx = 0;
     }
@@ -814,10 +886,13 @@ function createGame(THREE, renderer, ui) {
         const half = g.gap / 2;
         const kit = gateKits[g.kitIdx];
         // brushing an inner pole knocks it (whether or not the gate counts)
-        if (Math.abs(xAt - (g.cx - half)) < 0.5) knock(g.left, 7);
-        if (Math.abs(xAt - (g.cx + half)) < 0.5) knock(g.right, 7);
+        let knocked = false;
+        if (Math.abs(xAt - (g.cx - half)) < 0.5) knocked = knock(g.left, 7);
+        if (Math.abs(xAt - (g.cx + half)) < 0.5) knocked = knock(g.right, 7);
+        if (knocked) audio.play("pole");
         if (Math.abs(xAt - g.cx) <= half) {
           state.cleared++;
+          audio.play("gate", state.streak++);
           state.targetSpeed = Math.min(SPEED_MAX, state.targetSpeed + SPEED_STEP);
           for (let k = 0; k < 26; k++) {
             const s = k % 2 ? 1 : -1;
@@ -825,6 +900,8 @@ function createGame(THREE, renderer, ui) {
           }
         } else {
           state.missed++;
+          state.streak = 0;
+          audio.play("miss");
           state.targetSpeed = Math.max(SPEED_START, state.targetSpeed - SPEED_PENALTY);
           state.hitTimer = 0.45;
           if (!reducedMotion.matches) state.shake = 0.35;
@@ -833,7 +910,7 @@ function createGame(THREE, renderer, ui) {
         updateHud();
       }
       if (g.z > state.z + 14) {
-        scene.remove(g.group);
+        world.remove(g.group);
         gates.splice(i, 1);
         gatePool.push(g);
       }
@@ -847,6 +924,7 @@ function createGame(THREE, renderer, ui) {
 
     // Snow spray from the ski tails when carving
     const carve = Math.abs(steer) * (0.4 + Math.abs(state.vx) / LAT_MAX);
+    state.carve = Math.min(1, carve);
     if (carve > 0.15) {
       const n = Math.ceil(carve * 3);
       const outward = -Math.sign(state.vx || steer);
@@ -894,25 +972,37 @@ function createGame(THREE, renderer, ui) {
   // ---- Camera ----
   const camTarget = new THREE.Vector3();
   const lookTarget = new THREE.Vector3();
+  const camLocal = new THREE.Vector3();
   const look = new THREE.Vector3();
+  const lookWorld = new THREE.Vector3();
+  const skierWorld = new THREE.Vector3();
 
   function placeCamera(snap, dt = 0) {
-    camTarget.set(state.x * 0.7, 4.4, state.z + 8.2);
-    lookTarget.set(state.x * 0.8, 0.4, state.z - 13);
+    camTarget.set(state.x * 0.7, 4.2, state.z + 8.4);
+    lookTarget.set(state.x * 0.8, 2.4, state.z - 22);
     if (!state.running && !reducedMotion.matches) {
       // gentle drift while waiting to start
       camTarget.x += Math.sin(state.idleT * 0.5) * 1.2;
       camTarget.y += Math.sin(state.idleT * 0.35) * 0.3;
     }
     if (snap) {
-      camera.position.copy(camTarget);
+      camLocal.copy(camTarget);
       look.copy(lookTarget);
     } else {
-      camera.position.lerp(camTarget, damp(6, dt));
-      camera.position.z = camTarget.z; // never lag behind in depth
+      camLocal.lerp(camTarget, damp(6, dt));
+      camLocal.z = camTarget.z; // never lag behind down the hill
       look.lerp(lookTarget, damp(8, dt));
     }
-    camera.lookAt(look);
+    camera.position.copy(camLocal);
+    world.localToWorld(camera.position);
+    camera.lookAt(world.localToWorld(lookWorld.copy(look)));
+
+    // widen the view a touch as speed builds
+    const fov = BASE_FOV + (state.running ? ((state.speed - SPEED_START) / (SPEED_MAX - SPEED_START)) * 9 : 0);
+    if (Math.abs(camera.fov - fov) > 0.05) {
+      camera.fov = fov;
+      camera.updateProjectionMatrix();
+    }
     if (state.shake > 0) {
       const s = state.shake * 0.25;
       camera.position.x += rand(-s, s);
@@ -920,11 +1010,13 @@ function createGame(THREE, renderer, ui) {
     }
 
     // things that travel with the camera
-    mountains.position.set(camera.position.x * 0.9, 0, camera.position.z);
+    mountains.position.set(camera.position.x * 0.9, camera.position.y, camera.position.z);
+    sky.position.copy(camera.position);
     ground.position.set(0, 0, Math.round(state.z / TILE_LEN) * TILE_LEN - 100);
-    sun.position.set(state.x - 8, 18, state.z - 4);
-    sun.target.position.set(state.x, 0, state.z - 8);
-    recycleScenery(camera.position.z);
+    world.localToWorld(skierWorld.set(state.x, 0, state.z - 8));
+    sun.target.position.copy(skierWorld);
+    sun.position.set(skierWorld.x - 8, skierWorld.y + 18, skierWorld.z + 4);
+    recycleScenery(camLocal.z);
   }
 
   // ---- Main loop ----
@@ -960,6 +1052,11 @@ function createGame(THREE, renderer, ui) {
     }
     poseSkier(dt);
     placeCamera(false, dt);
+    audio.setMotion(
+      live,
+      (state.speed - SPEED_START) / (SPEED_MAX - SPEED_START),
+      live ? state.carve : 0
+    );
     renderer.render(scene, camera);
     needsRender = false;
 
@@ -997,9 +1094,13 @@ function createGame(THREE, renderer, ui) {
   // ---- Controls ----
   function start() {
     if (state.running && !state.paused) return;
+    audio.unlock();
     if (!state.running) {
       reset();
       state.running = true;
+      audio.play("start");
+    } else {
+      audio.play("click");
     }
     state.paused = false;
     setOverlay(ui, null);
@@ -1017,6 +1118,8 @@ function createGame(THREE, renderer, ui) {
     if (ui.pauseBtn) ui.pauseBtn.textContent = state.paused ? "Resume" : "Pause";
     setOverlay(ui, state.paused ? "Paused" : null);
     state.inputLeft = state.inputRight = false;
+    if (state.paused) audio.setMotion(false, 0, 0);
+    audio.play("click");
     if (!state.paused) kick();
     else requestRender();
   }
@@ -1034,7 +1137,28 @@ function createGame(THREE, renderer, ui) {
 
   const LEFT_KEYS = ["ArrowLeft", "a", "A"];
   const RIGHT_KEYS = ["ArrowRight", "d", "D"];
+  function syncSoundBtn() {
+    if (!ui.soundBtn) return;
+    ui.soundBtn.textContent = audio.muted ? "Sound off" : "Sound on";
+    ui.soundBtn.setAttribute("aria-pressed", String(!audio.muted));
+  }
+  function toggleSound() {
+    audio.unlock();
+    audio.setMuted(!audio.muted);
+    syncSoundBtn();
+    audio.play("click");
+  }
+  if (ui.soundBtn) {
+    ui.soundBtn.addEventListener("click", toggleSound);
+    ui.soundBtn.hidden = false;
+    syncSoundBtn();
+  }
+
   document.addEventListener("keydown", (e) => {
+    if ((e.key === "m" || e.key === "M") && state.running) {
+      toggleSound();
+      return;
+    }
     if (!state.running) return;
     if (LEFT_KEYS.includes(e.key)) {
       state.inputLeft = true;
@@ -1055,7 +1179,7 @@ function createGame(THREE, renderer, ui) {
   // Pointer / touch: drag to steer towards the point on the snow
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
-  const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0).applyMatrix4(world.matrixWorld);
   const hit = new THREE.Vector3();
   function pointerToX(e) {
     const rect = canvas.getBoundingClientRect();
@@ -1063,7 +1187,9 @@ function createGame(THREE, renderer, ui) {
     // project on to the snow just ahead of the skier
     ndc.y = Math.min(ndc.y, -0.1);
     raycaster.setFromCamera(ndc, camera);
-    if (raycaster.ray.intersectPlane(groundPlane, hit)) return clamp(hit.x, -SKIER_LIMIT, SKIER_LIMIT);
+    if (raycaster.ray.intersectPlane(groundPlane, hit)) {
+      return clamp(world.worldToLocal(hit).x, -SKIER_LIMIT, SKIER_LIMIT);
+    }
     return state.x;
   }
   canvas.addEventListener("pointerdown", (e) => {
@@ -1107,6 +1233,6 @@ function createGame(THREE, renderer, ui) {
   kick();
 
   if (new URLSearchParams(location.search).has("debug")) {
-    window.__slalom = { state, scene, camera, start, togglePause };
+    window.__slalom = { state, scene, camera, start, togglePause, audio };
   }
 }

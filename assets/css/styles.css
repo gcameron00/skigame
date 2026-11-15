@@ -246,6 +246,7 @@ a:focus-visible {
 
 .game__controls {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: center;
   margin: 0.75rem 0 0.25rem;
