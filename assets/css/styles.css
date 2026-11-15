@@ -172,9 +172,15 @@ a:focus-visible {
   justify-content: center;
 }
 
+.game__viewport {
+  position: relative;
+  width: min(320px, 100%);
+  border-radius: var(--radius);
+}
+
 #slalom-canvas {
   display: block;
-  width: min(320px, 100%);
+  width: 100%;
   height: auto;
   aspect-ratio: 320 / 480;
   background: linear-gradient(180deg, #eef4ff 0%, #ffffff 100%);
@@ -187,6 +193,54 @@ a:focus-visible {
 @media (prefers-color-scheme: dark) {
   #slalom-canvas {
     background: linear-gradient(180deg, #1a2747 0%, #0f1a35 100%);
+  }
+}
+
+.game__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  background: rgba(15, 23, 42, 0.35);
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 3px rgba(15, 23, 42, 0.5);
+  pointer-events: none;
+}
+
+.game__overlay[hidden] {
+  display: none;
+}
+
+.game__viewport::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 3px rgba(239, 68, 68, 0), inset 0 0 40px rgba(239, 68, 68, 0);
+  pointer-events: none;
+}
+
+.game__viewport.is-miss::after {
+  animation: slalom-miss 0.45s ease-out;
+}
+
+@keyframes slalom-miss {
+  from {
+    box-shadow: inset 0 0 0 3px rgba(239, 68, 68, 0.9), inset 0 0 40px rgba(239, 68, 68, 0.55);
+  }
+  to {
+    box-shadow: inset 0 0 0 3px rgba(239, 68, 68, 0), inset 0 0 40px rgba(239, 68, 68, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game__viewport.is-miss::after {
+    animation-duration: 0.01s;
   }
 }
 
@@ -223,7 +277,8 @@ a:focus-visible {
 .game__status {
   display: flex;
   justify-content: center;
-  gap: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
   color: var(--color-muted);
   font-size: 0.95rem;
   margin: 0.5rem 0 0.25rem;

@@ -14,7 +14,8 @@ enough to read in one sitting.
 
 ## Non-goals
 
-- No framework, bundler, package.json or build step.
+- No framework, bundler, package.json or build step. (three.js is vendored
+  as a single ES module file under `assets/js/vendor/three/`.)
 - No analytics, tracking, or third-party scripts.
 - No user accounts, forms, newsletter sign-ups, or backend.
 - No attempt to make the game competitive — no leaderboards, no scoring

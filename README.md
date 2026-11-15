@@ -2,10 +2,10 @@
 
 A small, static holding site for **caitlincameron.ski**. It politely tells
 visitors that the full site is on its way — first in German, then in English —
-and offers a small slalom mini-game while they wait.
+and offers a small 3D slalom mini-game (built with three.js) while they wait.
 
 The site is intentionally tiny: plain HTML, CSS and JavaScript, no build step,
-no framework, no dependencies. It is designed to be deployed to
+no framework. The only dependency is a vendored copy of three.js for the game. It is designed to be deployed to
 [Cloudflare Pages](https://pages.cloudflare.com/) as a static asset bundle.
 
 ## What's on the site
@@ -13,7 +13,13 @@ no framework, no dependencies. It is designed to be deployed to
 - **Bilingual coming-soon message** (German first, then English) at the top of
   the page. The German message is intended to be the primary message, with
   English as a courtesy translation for international visitors.
-- **A tiny slalom skier game** below the message. The game is optional and
+- **A small 3D slalom game** below the message, rendered with three.js:
+  a chase camera behind the skier, red/blue GS gates whose poles get knocked
+  when you clip them, ski tracks, snow spray, falling snow, trees and a
+  mountain backdrop. It follows the light/dark colour scheme (day or dusk).
+  Speed creeps up as you clear gates and drops back when you miss one.
+  three.js only loads when the game scrolls near the screen, and browsers
+  without WebGL get the original 2D canvas game instead. The game is optional and
   visually subordinate to the message — visitors should be able to read the
   notice without playing.
 - **An About page** at `/about/` describing what the site is and who it is for.
@@ -30,7 +36,9 @@ no framework, no dependencies. It is designed to be deployed to
 │   │   └── styles.css    # All styles, including the game canvas frame
 │   ├── js/
 │   │   ├── main.js       # Small helpers (e.g. footer year)
-│   │   └── slalom.js     # Slalom mini-game (canvas-based)
+│   │   ├── slalom3d.js   # Slalom mini-game (three.js / WebGL)
+│   │   ├── slalom-2d.js  # Original 2D canvas game, used as a fallback
+│   │   └── vendor/three/ # three.js r170 (ES module) + MIT licence
 │   └── favicon.svg       # Ski-themed favicon
 ├── _headers              # Cloudflare Pages response headers
 ├── docs/
@@ -70,9 +78,11 @@ automatically.
 ## Browser support
 
 Targets evergreen browsers (current Chrome, Firefox, Safari, Edge) on desktop
-and mobile. The game uses the 2D `<canvas>` API and standard keyboard /
-pointer events; on very old browsers the canvas will simply be empty while
-the rest of the page continues to work.
+and mobile. The game uses WebGL via three.js (an ES module) and standard keyboard /
+pointer events. Without WebGL it falls back to the original 2D `<canvas>`
+game; on very old browsers without module support the canvas simply stays
+empty while the rest of the page continues to work. Add `?debug` to the URL
+to expose the game state as `window.__slalom` in the console.
 
 ## Accessibility
 
