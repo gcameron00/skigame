@@ -9,7 +9,7 @@
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/assets/css/styles.css" />
     <script defer src="/assets/js/main.js"></script>
-    <script defer src="/assets/js/slalom.js"></script>
+    <script type="module" src="/assets/js/slalom3d.js"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -48,17 +48,20 @@
         </p>
 
         <div class="game__stage">
-          <canvas
-            id="slalom-canvas"
-            width="320"
-            height="480"
-            aria-label="Slalom skiing mini-game"
-            role="img"
-          >
-            Your browser does not support the HTML canvas element, so the
-            mini-game isn't available — but the message above is the
-            important part.
-          </canvas>
+          <div class="game__viewport">
+            <canvas
+              id="slalom-canvas"
+              width="320"
+              height="480"
+              aria-label="Slalom skiing mini-game"
+              role="img"
+            >
+              Your browser does not support the HTML canvas element, so the
+              mini-game isn't available — but the message above is the
+              important part.
+            </canvas>
+            <div id="slalom-overlay" class="game__overlay" aria-hidden="true" hidden></div>
+          </div>
         </div>
 
         <div class="game__controls">
@@ -69,10 +72,11 @@
         <p class="game__status" aria-live="polite">
           <span>Gates cleared: <strong id="slalom-cleared">0</strong></span>
           <span>Missed: <strong id="slalom-missed">0</strong></span>
+          <span id="slalom-speed-wrap">Speed: <strong id="slalom-speed">0</strong> km/h</span>
         </p>
 
         <p class="game__hint">
-          Use <kbd>←</kbd> / <kbd>→</kbd> (or drag on touch) to steer.
+          Use <kbd>←</kbd> / <kbd>→</kbd> (or drag on touch) to steer. <kbd>Space</kbd> pauses.
         </p>
       </section>
     </main>
