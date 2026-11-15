@@ -16,8 +16,16 @@ no framework. The only dependency is a vendored copy of three.js for the game. I
 - **A small 3D slalom game** below the message, rendered with three.js:
   a chase camera behind the skier, red/blue GS gates whose poles get knocked
   when you clip them, ski tracks, snow spray, falling snow, trees and a
-  mountain backdrop. It follows the light/dark colour scheme (day or dusk).
+  mountain backdrop. The piste is tilted about 15° while the camera and
+  horizon stay level, so it drops away into a hazy valley. It follows the
+  light/dark colour scheme (day or dusk).
   Speed creeps up as you clear gates and drops back when you miss one.
+  Simple synthesised sounds (Web Audio, no files): start beeps, a chime per
+  gate that climbs with each one in a row, pole slaps, a miss buzz, and wind
+  and edge hiss that follow speed and carving. A Sound on/off button (or
+  <kbd>M</kbd>) mutes them, remembered on the device. iOS handling follows
+  GoblinSteel: `audioSession` set to playback, unlock on tap, resume
+  after interruptions, and a stall watchdog.
   three.js only loads when the game scrolls near the screen, and browsers
   without WebGL get the original 2D canvas game instead. The game is optional and
   visually subordinate to the message — visitors should be able to read the
@@ -37,6 +45,7 @@ no framework. The only dependency is a vendored copy of three.js for the game. I
 │   ├── js/
 │   │   ├── main.js       # Small helpers (e.g. footer year)
 │   │   ├── slalom3d.js   # Slalom mini-game (three.js / WebGL)
+│   │   ├── slalom-audio.js # Synthesised sounds (Web Audio)
 │   │   ├── slalom-2d.js  # Original 2D canvas game, used as a fallback
 │   │   └── vendor/three/ # three.js r170 (ES module) + MIT licence
 │   └── favicon.svg       # Ski-themed favicon
@@ -73,7 +82,10 @@ picked up automatically.
 
 Response headers (cache control, basic security headers) are configured in
 the [`_headers`](./_headers) file, which Cloudflare Pages picks up
-automatically.
+automatically. Our own HTML, CSS and JS use Pages' default caching
+(revalidate every time, so updates show straight away). Only the vendored
+three.js is cached long-term. The `?v=` on the CSS/JS links was added once
+to get past copies that browsers had cached under the old one-year rule.
 
 ## Browser support
 

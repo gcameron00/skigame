@@ -1,11 +1,19 @@
 # Cloudflare Pages response headers
 # Docs: https://developers.cloudflare.com/pages/configuration/headers/
+#
+# HTML, CSS and our own JS use Cloudflare Pages' default caching
+# (max-age=0, must-revalidate, with ETags), so changes show up straight
+# away and unchanged files cost only a quick 304. Only the vendored
+# three.js, whose contents never change at a given path, is cached
+# long-term. If three.js is upgraded, put it in a new folder.
+#
+# Don't set Cache-Control in /* as well: Pages joins duplicate headers
+# from overlapping rules with a comma.
 
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: interest-cohort=()
-  Cache-Control: public, max-age=300
 
-/assets/*
+/assets/js/vendor/*
   Cache-Control: public, max-age=31536000, immutable

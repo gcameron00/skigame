@@ -7,9 +7,9 @@
     <meta name="description" content="caitlincameron.ski — coming soon. Bald verfügbar." />
     <title>caitlincameron.ski — Bald verfügbar / Coming soon</title>
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/assets/css/styles.css" />
-    <script defer src="/assets/js/main.js"></script>
-    <script type="module" src="/assets/js/slalom3d.js"></script>
+    <link rel="stylesheet" href="/assets/css/styles.css?v=3" />
+    <script defer src="/assets/js/main.js?v=3"></script>
+    <script type="module" src="/assets/js/slalom3d.js?v=3"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -67,6 +67,7 @@
         <div class="game__controls">
           <button type="button" id="slalom-start" class="game__button">Start</button>
           <button type="button" id="slalom-pause" class="game__button" disabled>Pause</button>
+          <button type="button" id="slalom-sound" class="game__button" aria-pressed="true" hidden>Sound on</button>
         </div>
 
         <p class="game__status" aria-live="polite">
@@ -76,7 +77,7 @@
         </p>
 
         <p class="game__hint">
-          Use <kbd>←</kbd> / <kbd>→</kbd> (or drag on touch) to steer. <kbd>Space</kbd> pauses.
+          Use <kbd>←</kbd> / <kbd>→</kbd> (or drag on touch) to steer. <kbd>Space</kbd> pauses, <kbd>M</kbd> mutes.
         </p>
       </section>
     </main>
